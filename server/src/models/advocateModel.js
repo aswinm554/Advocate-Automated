@@ -4,7 +4,7 @@ const advocateSchema = new mongoose.Schema(
 
     {
         userId: {
-            type: momgoose.Schema.Type.ObjectId,
+            type: mongoose.Schema.Types.ObjectId,
             ref: "User",
             required: true,
             unique: true

@@ -3,15 +3,7 @@ import User from "../models/userModel.js";
 
 const authMiddleware = async (req, res, next) => {
   try {
-    let token;
-
-    // 1. Check Authorization header
-    if (
-      req.headers.authorization &&
-      req.headers.authorization.startsWith("Bearer")
-    ) {
-      token = req.headers.authorization.split(" ")[1];
-    }
+   const token = req.cookies.token;
 
     // 2. If no token
     if (!token) {
