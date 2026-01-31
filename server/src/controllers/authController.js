@@ -42,8 +42,7 @@ export const login = async (req, res) => {
 
         res.status(200).json({
             message: "Login successful",
-            token,
-            role: user.role,
+            user:{role: user.role}
         });
 
 
@@ -54,7 +53,6 @@ export const login = async (req, res) => {
 };
 
 //LOG OUT for all roles
-
 
 export const logout = async (req, res) => {
   try {
@@ -77,11 +75,15 @@ export const logout = async (req, res) => {
 
 export const registerAdvocate = async (req, res) => {
     try {
-        const { name, email, password, licenseNumber, experience, specialization, licenseDocument } = req.body;
+        const { name, email, password, licenseNumber, experience, specialization} = req.body;
+        const licenseDocument = req.file; // File is here
 
         // Basic validation
         if (!name || !email || !password || !licenseNumber || !experience || !specialization || !licenseDocument) {
             return res.status(400).json({ message: "All fields are required" });
+        }
+        if(!licenseDocument){
+            return res.status(400).json({message: "License document is required"})
         }
 
         // Check if user already exists
@@ -99,20 +101,21 @@ export const registerAdvocate = async (req, res) => {
             isVerified: false, // admin must approve
         });
 
-        // Create Advocate profile (pending)
+        // Create Advocate profile
+        // if (role === "advocate")
         await Advocate.create({
             userId: user._id,
             licenseNumber,
-            experience,
+            experience: Number(experience),
             specialization,
-            licenseDocument,
+            licenseDocument: licenseDocument.path,
             status: "pending",
         });
 
-        // Response
+       
         res.status(201).json({
             message:
-                "Advocate registration submitted. Await admin approval.",
+                "Advocate registration successful. Await admin approval.",
         });
     } catch (error) {
         res.status(500).json({ message: error.message });

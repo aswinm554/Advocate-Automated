@@ -9,6 +9,10 @@ export const getAdminStats = async (req, res) => {
 
         const totalAdvocates = await Advocate.countDocuments();
 
+        const totalClients = await User.countDocuments({
+            role: "client",
+        })
+
         const pendingAdvocates = await Advocate.countDocuments({
             status: "pending",
         });
@@ -24,6 +28,7 @@ export const getAdminStats = async (req, res) => {
         res.status(200).json({
             totalUsers,
             totalAdvocates,
+            totalClients,
             pendingAdvocates,
             approvedAdvocates,
             rejectedAdvocates,

@@ -1,103 +1,191 @@
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import React, { useState } from 'react'
 import { useNavigate } from "react-router-dom";
+import api from "../api/api"
 
 const SignupLogin = () => {
-
-
     const navigate = useNavigate();
     const [message, setMessage] = useState("");
     const [issignUp, setIssignUp] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [formData, setFormData] = useState({
+
+    const initialFormData = {
         role: "client",
         username: "",
         email: "",
         password: "",
         confirmPassword: "",
-
-        // advocate
-        barId: "",
+        licenseNumber: "",
         experience: "",
-
-        // client
+        specialization: "",
+        licenseDocument: null,
         phone: "",
         address: "",
-    })
+    };
+
+    const [formData, setFormData] = useState(initialFormData)
 
     const handleChange = (e) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value,
-        });
+        const { name, value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: value,
+        }));
     };
-    //switch signup/login
+
     const accountinfo = (term) => {
-        setIssignUp(term === "signup")
-        setMessage("")
+        setIssignUp(term === "signup");
+        setMessage("");
+        setFormData(initialFormData);
+        setShowPassword(false);
+        setShowConfirm(false);
+    };
+
+    const isValidEmail = (email) => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    };
+
+    const isValidPassword = (password) => {
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#]).{8,}$/;
+        return passwordRegex.test(password);
     };
 
     const handleSubmit = async (e) => {
-
         e.preventDefault();
         setMessage("");
         setLoading(true);
 
+        // Validation
+        if (!isValidEmail(formData.email)) {
+            setMessage("Please enter a valid email address");
+            setLoading(false);
+            return;
+        }
+
+        if (!isValidPassword(formData.password)) {
+            setMessage("Password must be at least 8 characters and include uppercase, lowercase, number, and special character");
+            setLoading(false);
+            return;
+        }
+
         if (issignUp) {
-
-
             if (formData.password !== formData.confirmPassword) {
                 setMessage("Passwords do not match!");
                 setLoading(false);
                 return;
             }
 
-            console.log("Signup data:", formData);
-            setMessage("Signup UI working");
-            setLoading(false);
-            setIssignUp(false);
-            return;
+            if (formData.role === "advocate" && !formData.licenseDocument) {
+                setMessage("Please upload a license document");
+                setLoading(false);
+                return;
+            }
+
+            try {
+                const uri = formData.role === "client"
+                    ? "/auth/register/client"
+                    : "/auth/register/advocate";
+
+                let requestData;
+
+                if (formData.role === "advocate") {
+                    // Create FormData for file upload
+                    requestData = new FormData();
+                    requestData.append('role', formData.role);
+                    requestData.append('name', formData.username);
+                    requestData.append('email', formData.email);
+                    requestData.append('password', formData.password);
+                    requestData.append('licenseNumber', formData.licenseNumber);
+                    requestData.append('experience', formData.experience);
+                    requestData.append('specialization', formData.specialization);
+                    requestData.append('licenseDocument', formData.licenseDocument);
+                } else {
+                    // JSON for client
+                    requestData = {
+                        name: formData.username,
+                        email: formData.email,
+                        password: formData.password,
+                        phone: formData.phone,
+                        address: formData.address
+                    };
+                }
+
+                const res = await api.post(uri, requestData);
+                setMessage(res.data.message || "Signup successful!");
+
+                setTimeout(() => {
+                    setIssignUp(false);
+                    setFormData(initialFormData);
+                }, 2000);
+
+            } catch (error) {
+                setMessage(error.response?.data?.message || "Signup failed. Please try again.");
+            } finally {
+                setLoading(false);
+            }
+        } else {
+            // Login logic
+            try {
+                const res = await api.post("/auth/login", {
+                    email: formData.email,
+                    password: formData.password,
+                });
+
+                const user = res.data.user;
+                setMessage(res.data.message || "Login successful");
+
+                if (user.role === "admin") {
+                    navigate("/admin");
+                } else {
+                    navigate("/");
+                }
+            } catch (error) {
+                setMessage(error.response?.data?.message || "Invalid email or password");
+            } finally {
+                setLoading(false);
+            }
         }
-        //login validation
-        console.log("Login data:", {
-            email: formData.email,
-            password: formData.password,
-        });
-
-
-        setMessage("Login UI working");
-        setLoading(false);
-
-        setTimeout(() => {
-            navigate("/");
-        }, 1000);
     };
 
     return (
         <div className="flex justify-center items-center min-h-screen px-4">
             <div className="w-full max-w-md p-6 sm:p-8 rounded-2xl shadow-lg transition-all duration-300">
                 <div className="flex mb-6">
-                    <button className={`flex-1 py-2 text-lg sm:text-xl font-semibold transition-all duration-200 ${!issignUp ? "border-b-4 border-(--dark)" : "text-gray-500"}`} onClick={() => accountinfo("login")}>
+                    <button
+                        className={`flex-1 py-2 text-lg sm:text-xl font-semibold transition-all duration-200 ${!issignUp ? "border-b-4 border-gray-900" : "text-gray-500"}`}
+                        onClick={() => accountinfo("login")}
+                    >
                         Log In
                     </button>
-                    <button className={`flex-1 py-2 text-lg sm:text-xl font-semibold transition-all duration-200 ${issignUp ? "border-b-4 border-(--dark)" : "text-gray-500"}`} onClick={() => accountinfo("signup")}>
+                    <button
+                        className={`flex-1 py-2 text-lg sm:text-xl font-semibold transition-all duration-200 ${issignUp ? "border-b-4 border-gray-900" : "text-gray-500"}`}
+                        onClick={() => accountinfo("signup")}
+                    >
                         Sign Up
                     </button>
                 </div>
-                <form onSubmit={handleSubmit}>{issignUp && (
-                    <div className="mb-4">
-                        <label className="block mb-1 text-sm sm:text-base font-medium text-gray-700">
-                            Role
-                        </label>
-                        <select name="role" value={formData.role} onChange={handleChange} className="w-full px-3 py-2 border rounded-lg">
-                            <option value="client">Client</option>
-                            <option value="advocate">Advocate</option>
-                        </select>
-                    </div>
 
-                )}
+                <form onSubmit={handleSubmit}>
+                    {issignUp && (
+                        <div className="mb-4">
+                            <label className="block mb-1 text-sm sm:text-base font-medium text-gray-700">
+                                Role
+                            </label>
+                            <select
+                                name="role"
+                                value={formData.role}
+                                onChange={handleChange}
+                                className="w-full px-3 py-2 border rounded-lg"
+                            >
+                                <option value="client">Client</option>
+                                <option value="advocate">Advocate</option>
+                            </select>
+                        </div>
+                    )}
+
                     {issignUp && (
                         <div className='mb-4'>
                             <label className="block mb-1 text-sm sm:text-base font-medium text-gray-700">
@@ -113,6 +201,7 @@ const SignupLogin = () => {
                             />
                         </div>
                     )}
+
                     <div className='mb-4'>
                         <label className="block mb-1 text-sm sm:text-base font-medium text-gray-700">
                             Email
@@ -128,27 +217,33 @@ const SignupLogin = () => {
                         />
                     </div>
 
-                    <div className='mb-4 relative'>
+                    <div className='mb-2 relative'>
                         <label className="block mb-1 text-sm sm:text-base font-medium text-gray-700">
                             Password
-                        </label>                        <input
+                        </label>
+                        <input
                             type={showPassword ? "text" : "password"}
                             name="password"
                             placeholder="Password"
                             value={formData.password}
                             onChange={handleChange}
-                            className="w-full px-3 py-2 border rounded-lg"
+                            className="w-full px-3 py-2 border rounded-lg pr-10"
                             required
                         />
-
                         <button
                             type="button"
-                            onClick={() => setShowPassword(showPassword)}
-                            className="absolute inset-y-0 right-3 top-8 flex items-center text-gray-500"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-9 text-gray-500"
                         >
-                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                            {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
                         </button>
                     </div>
+
+                    {issignUp && (
+                        <p className="mb-2 text-xs text-gray-500 mt-1">
+                            Password must be at least 8 characters, include uppercase, lowercase, number, and special character.
+                        </p>
+                    )}
 
                     {issignUp && (
                         <div className='mb-4 relative'>
@@ -161,15 +256,15 @@ const SignupLogin = () => {
                                 placeholder="Confirm Password"
                                 value={formData.confirmPassword}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border rounded-lg"
+                                className="w-full px-3 py-2 border rounded-lg pr-10"
                                 required
                             />
                             <button
                                 type="button"
                                 onClick={() => setShowConfirm(!showConfirm)}
-                                className="absolute inset-y-0 right-3 top-8 flex items-center text-gray-500"
+                                className="absolute right-3 top-9 text-gray-500"
                             >
-                                {!showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                                {showConfirm ? <Eye size={18} /> : <EyeOff size={18} />}
                             </button>
                         </div>
                     )}
@@ -179,26 +274,55 @@ const SignupLogin = () => {
                         <>
                             <div className='mb-4'>
                                 <label className="block mb-1 text-sm sm:text-base font-medium text-gray-700">
-                                    Bar ID
+                                    License Number
                                 </label>
                                 <input
-                                    name="barId"
-                                    placeholder="Bar ID"
-                                    value={formData.barId}
+                                    name="licenseNumber"
+                                    placeholder="e.g. KL1254***"
+                                    value={formData.licenseNumber}
                                     onChange={handleChange}
                                     className="w-full px-3 py-2 border rounded-lg"
+                                    required
                                 />
                             </div>
                             <div className='mb-4'>
                                 <label className="block mb-1 text-sm sm:text-base font-medium text-gray-700">
-                                    Experience
+                                    Specialization
                                 </label>
                                 <input
+                                    name="specialization"
+                                    placeholder="e.g. Criminal Law"
+                                    value={formData.specialization}
+                                    onChange={handleChange}
+                                    className="w-full px-3 py-2 border rounded-lg"
+                                    required
+                                />
+                            </div>
+                            <div className='mb-4'>
+                                <label className="block mb-1 text-sm sm:text-base font-medium text-gray-700">
+                                    Experience (Years)
+                                </label>
+                                <input
+                                    type="number"
                                     name="experience"
                                     placeholder="Years of Experience"
                                     value={formData.experience}
                                     onChange={handleChange}
+                                    min="0"
                                     className="w-full px-3 py-2 border rounded-lg"
+                                    required
+                                />
+                            </div>
+                            <div className='mb-4'>
+                                <label className="block mb-1 text-sm sm:text-base font-medium text-gray-700">
+                                    License Document
+                                </label>
+                                <input
+                                    type="file"
+                                    accept=".pdf,image/*"
+                                    onChange={(e) => setFormData({ ...formData, licenseDocument: e.target.files[0] })}
+                                    className="w-full px-3 py-2 border rounded-lg"
+                                    required
                                 />
                             </div>
 
@@ -238,11 +362,11 @@ const SignupLogin = () => {
                     <button
                         type="submit"
                         disabled={loading}
-                        className={`w-full flex justify-center items-center gap-2 bg-gray-900 text-white py-2 rounded-lg text-lg sm:text-xl font-semibold cursor-pointer transition-all duration-200 ${loading ? "opacity-70 cursor-not-allowed" : ""}`}
+                        className={`w-full flex justify-center items-center gap-2 bg-gray-900 text-white py-2 rounded-lg text-lg sm:text-xl font-semibold transition-all duration-200 ${loading ? "opacity-70 cursor-not-allowed" : "hover:bg-gray-800"}`}
                     >
                         {loading ? (
                             <>
-                                <Loader2 className="animate-spin" size={20} /> {/* Spinner icon */}
+                                <Loader2 className="animate-spin" size={20} />
                                 {issignUp ? "Signing Up..." : "Logging In..."}
                             </>
                         ) : issignUp ? (
@@ -252,12 +376,15 @@ const SignupLogin = () => {
                         )}
                     </button>
                 </form>
-                {message && <p className="mt-4 text-center">{message}</p>}
+
+                {message && (
+                    <p className={`mt-4 text-center ${message.includes("successful") ||  message.includes("submitted") ||  message.includes("registered")  ? "text-green-600" : "text-red-600"}`}>
+                        {message}
+                    </p>
+                )}
 
                 <p className="text-center mt-4 text-gray-600 text-sm sm:text-base">
-                    {issignUp
-                        ? "Already have an account? "
-                        : "Don't have an account? "}
+                    {issignUp ? "Already have an account? " : "Don't have an account? "}
                     <button
                         className="text-blue-500 hover:underline"
                         onClick={() => accountinfo(issignUp ? "login" : "signup")}
