@@ -3,7 +3,21 @@ import Advocate from "../../models/advocateModel.js";
 import logActivity from "../../utils/logActivity.js";
 
 
+//get all advocates
+export const  getAllAdvocates = async(req,res) => {
+  try{ 
+    const advocates = await Advocate.find().populate("userId", "name email role").sort({ createdAt: -1});
+     
+    res.status(200).json({ success: true, count: advocates.length, data: advocates
+    });
+  } catch (error) { res.status(500).json({
+      success: false,
+      message: 'Failed to fetch advocates',
+      error: error.message
+    });
 
+  } 
+}
 
 //GET all pending advocates
 export const getPendingAdvocates = async (req, res) => {

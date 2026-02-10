@@ -5,8 +5,13 @@ import authRoutes from "./src/routes/authRoutes.js";
 import adminReportRoutes from "./src/routes/admin/reportRoutes.js";
 import advocateRoutes from "./src/routes/admin/advocatesRoutes.js";
 import activityRoutes from "./src/routes/admin/activityRoutes.js";
+import adminProfileRoutes from "./src/routes/admin/adminProfileRoutes.js";
+import caseRoutes from "./src/routes/advocate/caseRoutes.js";
+import dashboardRoutes from "./src/routes/advocate/dashboardRoutes.js"
+
 import cookieParser from "cookie-parser";
 import cors from "cors";
+
 
 
 
@@ -28,10 +33,19 @@ app.use(cors({
 }));
 
 app.use(cookieParser());
+
 app.use("/api/auth", authRoutes);
+//ADMIN ROUTES
 app.use("/api/admin/reports", adminReportRoutes);
 app.use("/api/admin/advocates", advocateRoutes);
-app.use("/api/admin/activity", activityRoutes)
+app.use("/api/admin/activity", activityRoutes);
+app.use("/api/admin", adminProfileRoutes);
+
+//ADVOCATE ROUTES
+app.use("/api/advocate/dashboard", dashboardRoutes)
+app.use("/api/advocate/cases", caseRoutes);
+  
+
 
 
 

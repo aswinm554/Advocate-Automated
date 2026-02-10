@@ -1,10 +1,12 @@
 import express from "express";
-import { getPendingAdvocates, approveAdvocate, rejectAdvocate, getApprovedAdvocate, getApprovedAdvocateById, getRejectedAdvocates, getRejectedAdvocateById } from "../../controllers/admin/advocateController.js";
+import {getAllAdvocates, getPendingAdvocates, approveAdvocate, rejectAdvocate, getApprovedAdvocate, getApprovedAdvocateById, getRejectedAdvocates, getRejectedAdvocateById } from "../../controllers/admin/advocateController.js";
 import authMiddleware from "../../middlewares/authMiddleware.js";
 import adminMiddleware from "../../middlewares/adminMiddleware.js";
 
 
 const router = express.Router();
+// get all advocates
+router.get("/all", authMiddleware, adminMiddleware, getAllAdvocates);
 
 // GET pending advocate
 

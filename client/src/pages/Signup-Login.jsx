@@ -133,6 +133,8 @@ const SignupLogin = () => {
                     email: formData.email,
                     password: formData.password,
                 });
+                localStorage.setItem("user", JSON.stringify(res.data.user));
+
 
                 const user = res.data.user;
                 setMessage(res.data.message || "Login successful");
@@ -362,7 +364,7 @@ const SignupLogin = () => {
                     <button
                         type="submit"
                         disabled={loading}
-                        className={`w-full flex justify-center items-center gap-2 bg-gray-900 text-white py-2 rounded-lg text-lg sm:text-xl font-semibold transition-all duration-200 ${loading ? "opacity-70 cursor-not-allowed" : "hover:bg-gray-800"}`}
+                        className={`w-full flex justify-center items-center gap-2 bg-green-600 text-white py-2 rounded-lg text-lg sm:text-xl font-semibold transition-all duration-200 ${loading ? "opacity-70 cursor-not-allowed" : "hover:bg-green-500"}`}
                     >
                         {loading ? (
                             <>
