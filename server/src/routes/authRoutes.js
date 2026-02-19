@@ -7,7 +7,7 @@ import path from "path";
 const router = express.Router();
 
 
-// Configure file upload
+
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, 'uploads/licenses/');
@@ -20,7 +20,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ 
     storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+    limits: { fileSize: 5 * 1024 * 1024 }
 });
 
 router.post("/login", login);

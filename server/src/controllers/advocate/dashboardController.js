@@ -5,7 +5,6 @@ export const advocateDashboard = async (req, res) => {
   try {
     const advocateId = req.user.id;
 
-    // 1️⃣ Case counts
     const totalCases = await Case.countDocuments({ advocateId });
     const activeCases = await Case.countDocuments({
       advocateId,
@@ -20,19 +19,19 @@ export const advocateDashboard = async (req, res) => {
       status: "closed"
     });
 
-    // 2️⃣ Upcoming hearings (next 7 days)
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const nextWeek = new Date();
     nextWeek.setDate(today.getDate() + 7);
 
     const upcomingHearings = await Case.find({
       advocateId,
-      hearingDate: { $gte: today, $lte: nextWeek }
+      hearingDate: { $gte: today }
     })
       .select("title court hearingDate")
-      .sort({ hearingDate: 1 });
+      .sort({ hearingDate: 1 })
+      .limit(5);
 
-    // 3️⃣ Recent case activity (last 5 updates)
     const recentActivities = await CaseHistory.find()
       .populate({
         path: "caseId",
@@ -42,7 +41,6 @@ export const advocateDashboard = async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(5);
 
-    // Remove history entries not belonging to this advocate
     const filteredActivities = recentActivities.filter(
       activity => activity.caseId !== null
     );

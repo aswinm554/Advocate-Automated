@@ -141,8 +141,9 @@ const SignupLogin = () => {
 
                 if (user.role === "admin") {
                     navigate("/admin");
-                } else {
-                    navigate("/");
+                }
+                if (user.role === "advocate") {
+                    navigate("/advocate");
                 }
             } catch (error) {
                 setMessage(error.response?.data?.message || "Invalid email or password");
@@ -380,7 +381,7 @@ const SignupLogin = () => {
                 </form>
 
                 {message && (
-                    <p className={`mt-4 text-center ${message.includes("successful") ||  message.includes("submitted") ||  message.includes("registered")  ? "text-green-600" : "text-red-600"}`}>
+                    <p className={`mt-4 text-center ${message.includes("successful") || message.includes("submitted") || message.includes("registered") ? "text-green-600" : "text-red-600"}`}>
                         {message}
                     </p>
                 )}

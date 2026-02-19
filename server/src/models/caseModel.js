@@ -31,7 +31,10 @@ const caseSchema = new mongoose.Schema(
       default: "pending"
     },
 
-    hearingDate: Date
+    hearingDate: {
+      type: Date
+    }
+
   },
   { timestamps: true }
 );

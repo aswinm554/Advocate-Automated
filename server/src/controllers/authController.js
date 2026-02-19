@@ -16,7 +16,7 @@ export const login = async (req, res) => {
         }
 
         const user = await User.findOne({ email });
-        
+
         if (!user) {
             return res.status(401).json({ message: "Invalid credentials" });
 
@@ -27,13 +27,18 @@ export const login = async (req, res) => {
         if (!isMatch) {
             return res.status(401).json({ message: "Invalid credentials" });
         }
+        if (user.status === "suspended") {
+            return res.status(403).json({
+                message: "Account suspended. Contact your advocate."
+            });
+        }
 
         const token = jwt.sign(
-
             { id: user._id, role: user.role },
-            process.env.SECRET
-
+            process.env.SECRET,
+            { expiresIn: "1d" }
         );
+
         res.cookie("token", token, {
             httpOnly: true,
             secure: false,        // REQUIRED for production
@@ -42,7 +47,7 @@ export const login = async (req, res) => {
 
         res.status(200).json({
             message: "Login successful",
-            user:{role: user.role}
+            user: {id: user._id, role: user.role, name: user.name }
         });
 
 
@@ -51,23 +56,22 @@ export const login = async (req, res) => {
 
     }
 };
-
 //LOG OUT for all roles
 
 export const logout = async (req, res) => {
-  try {
-    res.clearCookie("token", {
-      httpOnly: true,
-      secure: true,
-      sameSite: "none"
-    });
+    try {
+        res.clearCookie("token", {
+            httpOnly: true,
+            secure: true,
+            sameSite: "none"
+        });
 
-    res.status(200).json({
-      message: "Logout successful",
-    });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+        res.status(200).json({
+            message: "Logout successful",
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 };
 
 
@@ -75,15 +79,15 @@ export const logout = async (req, res) => {
 
 export const registerAdvocate = async (req, res) => {
     try {
-        const { name, email, password, licenseNumber, experience, specialization} = req.body;
+        const { name, email, password, licenseNumber, experience, specialization } = req.body;
         const licenseDocument = req.file; // File is here
 
         // Basic validation
         if (!name || !email || !password || !licenseNumber || !experience || !specialization || !licenseDocument) {
             return res.status(400).json({ message: "All fields are required" });
         }
-        if(!licenseDocument){
-            return res.status(400).json({message: "License document is required"})
+        if (!licenseDocument) {
+            return res.status(400).json({ message: "License document is required" })
         }
 
         // Check if user already exists
@@ -112,7 +116,7 @@ export const registerAdvocate = async (req, res) => {
             status: "pending",
         });
 
-       
+
         res.status(201).json({
             message:
                 "Advocate registration successful. Await admin approval.",
@@ -126,27 +130,29 @@ export const registerAdvocate = async (req, res) => {
 
 export const registerClient = async (req, res) => {
 
-    try{
-        const {name, email, password} = req.body;
-        if(!name || !email || !password) {return res.status(400).json({message: "All credentials are required"});
-    }
+    try {
+        const { name, email, password, phone, address } = req.body;
+        if (!name || !email || !password || !phone || !address) {
+            return res.status(400).json({ message: "All credentials are required" });
+        }
+
         //Check if user already exists
         const existingUser = await User.findOne({ email });
-        if(existingUser) {
-            return res.status(400).json({message: "User already exists"});
+        if (existingUser) {
+            return res.status(400).json({ message: "User already exists" });
         }
         // password hashing
         const hashedPassword = await bcrypt.hash(password, 10);
 
         //Create client user
-        const client = await User.create({name, email, password: hashedPassword, role: "client", isVerified: true});
+        const client = await User.create({ name, email, password: hashedPassword, role: "client", isVerified: true, phone, address });
 
-         res.status(201).json({
-      message: "Client registered successfully",
-      userId: client._id,
-    });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+        res.status(201).json({
+            message: "Client registered successfully",
+            userId: client._id,
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 
-}
+};

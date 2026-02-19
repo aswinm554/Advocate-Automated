@@ -25,6 +25,21 @@ const userSchema = new mongoose.Schema(
       enum: ["admin", "advocate", "junior_advocate", "client"],
       default: "client",
     },
+    parentAdvocateId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User"
+    },
+
+    phone: {
+      type: String,
+      required: function() {
+        return this.role === 'client';
+    }},
+    address: {
+      type: String,
+      required:function() {
+        return this.role === 'client';
+    }},
 
     isVerified: {
       type: Boolean,
