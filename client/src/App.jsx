@@ -34,6 +34,7 @@ import AdminClients from './admin/pages/Client';
 import AdvocateProfile from './advocate/pages/AdvocateProfile';
 import ClientProfile from './client/pages/ClientProfile';
 import JuniorProfile from './junior/pages/JuniorProfile';
+import Reports from './admin/pages/Reports';
 
 
 
@@ -49,6 +50,9 @@ const App = () => {
             <Route path="clients" element={<AdminClients />} />
             <Route path="advocates" element={<Advocates />} />
             <Route path="profile" element={<AdminProfile />} />
+            <Route path="reports" element={<Reports />} />
+
+
 
           </Route>
         </Route>

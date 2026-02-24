@@ -1,39 +1,39 @@
 import Advocate from "../../models/advocateModel.js";
 import User from "../../models/userModel.js";
+import Case from "../../models/caseModel.js";
+import Payment from "../../models/paymentModel.js";
 
+export const getAdminSummaryReport = async (req, res) => {
+  try {
+    const totalAdvocates = await Advocate.countDocuments();
+    const approvedAdvocates = await Advocate.countDocuments({ status: "approved" });
+    const pendingAdvocates = await Advocate.countDocuments({ status: "pending" });
+    const rejectedAdvocates = await Advocate.countDocuments({ status: "rejected" });
 
-export const getAdminStats = async (req, res) => {
-    try {
+    const totalClients = await User.countDocuments({ role: "client" });
 
-        const totalUsers = await User.countDocuments();
+    const totalCases = await Case.countDocuments();
 
-        const totalAdvocates = await Advocate.countDocuments();
+    const totalPayments = await Payment.countDocuments();
 
-        const totalClients = await User.countDocuments({
-            role: "client",
-        })
+    const revenueData = await Payment.aggregate([
+      { $group: { _id: null, totalRevenue: { $sum: "$amount" } } }
+    ]);
 
-        const pendingAdvocates = await Advocate.countDocuments({
-            status: "pending",
-        });
+    const totalRevenue = revenueData[0]?.totalRevenue || 0;
 
-        const approvedAdvocates = await Advocate.countDocuments({
-            status: "approved",
-        });
+    res.status(200).json({
+      totalAdvocates,
+      approvedAdvocates,
+      pendingAdvocates,
+      rejectedAdvocates,
+      totalClients,
+      totalCases,
+      totalPayments,
+      totalRevenue
+    });
 
-        const rejectedAdvocates = await Advocate.countDocuments({
-            status: "rejected",
-        });
-
-        res.status(200).json({
-            totalUsers,
-            totalAdvocates,
-            totalClients,
-            pendingAdvocates,
-            approvedAdvocates,
-            rejectedAdvocates,
-        });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-}
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

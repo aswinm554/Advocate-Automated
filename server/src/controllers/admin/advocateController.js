@@ -132,7 +132,6 @@ export const getApprovedAdvocateById = async (req, res) => {
 
 
 // REJECT advocate
-
 export const rejectAdvocate = async (req, res) => {
   try {
     const { reason } = req.body;
@@ -146,35 +145,20 @@ export const rejectAdvocate = async (req, res) => {
     if (!advocate) {
       return res.status(404).json({ message: "Advocate not found" });
     }
-    const oldStatus = advocate.status;
+
     advocate.status = "rejected";
     advocate.rejectionReason = reason;
     advocate.approvedAt = undefined;
-    advocate.approvedBy = req.user._id;
+    advocate.approvedBy = undefined;
 
     await advocate.save();
 
-    //activitylog
-    await logActivity({
-      actor: req.user._id,          // admin
-      actorRole: req.user.role,     // "admin"
-      action: "REJECT_ADVOCATE",
-      entityType: "Advocate",
-      entityId: advocate._id,
-      metadata: {
-        oldStatus,
-        newStatus: "rejected",
-        reason,
-        advocateUserId: advocate.userId,
-      },
-      ipAddress: req.ip,
-    });
     res.status(200).json({ message: "Advocate rejected successfully" });
+
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
-
 
 
 // GET all rejected advocates

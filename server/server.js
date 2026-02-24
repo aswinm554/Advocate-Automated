@@ -3,7 +3,8 @@ import "./src/config/env.js";
 import express from "express";
 import connectDB from "./src/config/db.js";
 import authRoutes from "./src/routes/authRoutes.js";
-import adminReportRoutes from "./src/routes/admin/reportRoutes.js";
+import adminDashboardRoutes from "./src/routes/admin/dashboardRoutes.js";
+import reportRoutes from "./src/routes/admin/reportRoutes.js"
 import advocateRoutes from "./src/routes/admin/advocatesRoutes.js";
 import activityRoutes from "./src/routes/admin/activityRoutes.js";
 import adminProfileRoutes from "./src/routes/admin/adminProfileRoutes.js";
@@ -49,7 +50,8 @@ app.use(cookieParser());
 
 app.use("/api/auth", authRoutes);
 //ADMIN ROUTES
-app.use("/api/admin/reports", adminReportRoutes)
+app.use("/api/admin/reports", adminDashboardRoutes)
+app.use("/api/admin/summary", reportRoutes)
 app.use("/api/admin/advocates", advocateRoutes)
 app.use("/api/admin/activity", activityRoutes)
 app.use("/api/admin", adminProfileRoutes)
@@ -89,8 +91,8 @@ app.use("/api/messages", messageRoutes);
 
 
 
-app.listen(process.env.PORT, ()=> {
-    console.log(`Server running on port ${process.env.PORT}`);
-    
-});
+const PORT = process.env.PORT || 5000;
 
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
