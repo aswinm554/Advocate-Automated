@@ -41,8 +41,8 @@ export const login = async (req, res) => {
 
         res.cookie("token", token, {
             httpOnly: true,
-            secure: false,        // REQUIRED for production
-            sameSite: "lax",    // REQUIRED for cross-site cookies
+            secure: true,        // REQUIRED for production
+            sameSite: "None",    // REQUIRED for cross-site cookies
         });
 
         res.status(200).json({

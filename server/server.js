@@ -42,7 +42,7 @@ app.use('/uploads', express.static('uploads'));
 
 
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: true,
   credentials: true
 }));
 
