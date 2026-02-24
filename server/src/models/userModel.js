@@ -27,19 +27,24 @@ const userSchema = new mongoose.Schema(
     },
     parentAdvocateId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User"
+      ref: "User",
+      required: function () {
+        return this.role === "junior_advocate";
+      }
     },
 
     phone: {
       type: String,
-      required: function() {
+      required: function () {
         return this.role === 'client';
-    }},
+      }
+    },
     address: {
       type: String,
-      required:function() {
+      required: function () {
         return this.role === 'client';
-    }},
+      }
+    },
 
     isVerified: {
       type: Boolean,

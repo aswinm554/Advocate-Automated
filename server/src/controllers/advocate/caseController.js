@@ -52,9 +52,15 @@ export const getAllCase = async (req, res) => {
     }
 
     const cases = await Case.find(query)
-      .sort(sortOptions)
-      .select("title caseNumber court status hearingDate updatedAt");
-
+      .populate({
+        path: "clientId",
+        populate: {
+          path: "userId",
+          select: "name email role"
+        }
+      })
+      .populate("assignedJuniors", "name email role")
+      .sort({ createdAt: -1 });
     res.status(200).json(cases);
 
   } catch (error) {

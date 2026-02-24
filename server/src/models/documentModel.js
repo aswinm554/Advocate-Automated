@@ -13,6 +13,9 @@ const documentSchema = new mongoose.Schema(
       ref: "Case",
       required: true
     },
+    caseNumber:{
+      type: String
+    },
 
     uploadedBy: {
       type: mongoose.Schema.Types.ObjectId,
@@ -25,16 +28,29 @@ const documentSchema = new mongoose.Schema(
       required: true
     },
 
-    filePath: {
+    fileUrl: {
       type: String,
       required: true
     },
+    publicId:{
+      type: String,
+      require: true
+    },
 
     category: {
-      type: String,
-      enum: ["evidence", "affidavit", "proof", "other"],
-      default: "other"
-    },
+  type: String,
+  enum: [
+    "general",
+    "petition",
+    "evidence",
+    "contract",
+    "court_order",
+    "correspondence",
+    "affidavit",
+    "other"
+  ],
+  default: "general"
+},
 
     isPrivate: {
       type: Boolean,

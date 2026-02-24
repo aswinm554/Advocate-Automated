@@ -5,7 +5,7 @@ import { getClientCaseDocuments } from "../../controllers/Client/documentControl
 
 const router = express.Router();
 
-router.get("/", authMiddleware, clientMiddleware, getClientCaseDocuments);
+router.get("/:caseId", authMiddleware, clientMiddleware, getClientCaseDocuments);
  
 
 export default router;

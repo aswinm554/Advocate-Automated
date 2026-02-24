@@ -19,23 +19,28 @@ const Advocate = () => {
       setLoading(true);
       const response = await api.get('/admin/advocates/all');
       
-      console.log('API Response:', response.data);
+     console.log(response.data.data);
       
     
-      const transformedData = response.data.data.map(advocate => ({
-        id: advocate._id,
-        _id: advocate._id,
-        name: advocate.userId.name,
-        email: advocate.userId.email,
-        licenseNumber: advocate.licenseNumber,
-        specialization: advocate.specialization,
-        experience: advocate.experience,
-        status: advocate.status,
-        licenseDocument: advocate.licenseDocument,
-        createdAt: advocate.createdAt,
-        updatedAt: advocate.updatedAt
-      }));
-      
+     const rawData = response?.data?.data || [];
+
+const transformedData = rawData
+  .filter(a => a && a.userId) // remove null userId
+  .map(advocate => ({
+    id: advocate._id,
+    _id: advocate._id,
+    name: advocate.userId?.name || "N/A",
+    email: advocate.userId?.email || "N/A",
+    licenseNumber: advocate.licenseNumber || "N/A",
+    specialization: advocate.specialization || "N/A",
+    experience: advocate.experience || 0,
+    status: advocate.status || "unknown",
+    licenseDocument: advocate.licenseDocument,
+    createdAt: advocate.createdAt,
+    updatedAt: advocate.updatedAt
+  }));
+
+setAdvocates(transformedData);
       console.log('Transformed Data:', transformedData);
       setAdvocates(transformedData);
       setError(null);

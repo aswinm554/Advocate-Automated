@@ -1,5 +1,5 @@
 import { Eye, EyeOff, Loader2 } from "lucide-react";
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from "react-router-dom";
 import api from "../api/api"
 
@@ -145,6 +145,13 @@ const SignupLogin = () => {
                 if (user.role === "advocate") {
                     navigate("/advocate");
                 }
+                 if (user.role === "client") {
+                    navigate("/client");
+                }
+                if (user.role === "junior_advocate") {
+                    navigate("/junior");
+                }
+console.log("Login response:", res.data);
             } catch (error) {
                 setMessage(error.response?.data?.message || "Invalid email or password");
             } finally {

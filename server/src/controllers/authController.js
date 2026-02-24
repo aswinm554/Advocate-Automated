@@ -47,7 +47,7 @@ export const login = async (req, res) => {
 
         res.status(200).json({
             message: "Login successful",
-            user: {id: user._id, role: user.role, name: user.name }
+            user: { id: user._id, role: user.role, name: user.name }
         });
 
 
@@ -86,9 +86,6 @@ export const registerAdvocate = async (req, res) => {
         if (!name || !email || !password || !licenseNumber || !experience || !specialization || !licenseDocument) {
             return res.status(400).json({ message: "All fields are required" });
         }
-        if (!licenseDocument) {
-            return res.status(400).json({ message: "License document is required" })
-        }
 
         // Check if user already exists
         const existingUser = await User.findOne({ email });
@@ -113,6 +110,7 @@ export const registerAdvocate = async (req, res) => {
             experience: Number(experience),
             specialization,
             licenseDocument: licenseDocument.path,
+            licensePublicId: licenseDocument.filename,
             status: "pending",
         });
 

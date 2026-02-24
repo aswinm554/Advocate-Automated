@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { MdMenuOpen } from "react-icons/md";
 import { FaUserCircle } from "react-icons/fa";
-import { LayoutDashboard, UserCheck, Users, FileBarChart, ClipboardList, LogOut } from 'lucide-react';
+import { LayoutDashboard, UserCheck, Users, FileBarChart, ClipboardList, LogOut, Scale } from 'lucide-react';
 import api from "../../api/api";
 
 const menuItems = [
@@ -26,26 +26,27 @@ const menuItems = [
     label: 'Reports',
     path: "/admin/reports"
   },
-  {
-    icons: <ClipboardList size={30} />,
-    label: 'Activitylogs',
-    path: "/admin/activitylog",
-  }
+  // {
+  //   icons: <ClipboardList size={30} />,
+  //   label: 'Activitylogs',
+  //   path: "/admin/activitylog",
+  // }
 ];
 
 const Sidebar = ({ open, setOpen }) => {
   const navigate = useNavigate();
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
 
   const handleLogout = async () => {
     if (window.confirm('Are you sure you want to logout?')) {
       try {
         await api.post('/auth/logout');
         localStorage.clear();
-        navigate('/login', { replace: true });
+        navigate('/', { replace: true });
       } catch (error) {
         console.error('Logout error:', error);
         localStorage.clear();
-        navigate('/login', { replace: true });
+        navigate('/', { replace: true });
       }
     }
   };
@@ -60,11 +61,13 @@ const Sidebar = ({ open, setOpen }) => {
 
       {/* Header */}
       <div className='px-3 py-2 h-20 flex justify-between items-center'>
-        <img 
-          src="https://imgs.search.brave.com/2D7yqHR8nqEsZFHq3yGoV5oqoZXqMR-tqFp0JfCw6hQ/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly90aHVt/YnMuZHJlYW1zdGlt/ZS5jb20vYi9sYXd5/ZXItYXR0b3JuZXkt/bG9nby1zaGllbGQt/c3dvcmQtbGF3LWxl/Z2FsLWFkdm9jYXRl/LWRlc2lnbi10ZW1w/bGF0ZS1saW5lYXIt/c3R5bGUtZmlybS1z/ZWN1cml0eS1jb21w/YW55LWxvZ290eXBl/LXByb3RlY3QtZGVm/ZW5zZS03ODUyMzMz/OC5qcGc" 
-          alt="Logo" 
-          className={`${open ? 'w-10' : 'w-0'} rounded-md transition-all duration-500`} 
-        />
+       <Scale
+  className={`
+    ${open ? 'w-10 h-10 opacity-100' : 'w-0 h-0 opacity-0'}
+    text-blue-700
+    transition-all duration-500
+  `}
+/>
         <div>
           <MdMenuOpen 
             size={36} 
@@ -129,8 +132,7 @@ const Sidebar = ({ open, setOpen }) => {
           <FaUserCircle size={30} />
           </div>
         <div className={`leading-5 ${!open && 'w-0 translate-x-24'} duration-500 overflow-hidden`}>
-          <p className="font-medium">Admin</p>
-          <span className='text-xs text-gray-600'>admin@legal.com</span>
+          <p className="font-medium">{user.name || 'Admin'}</p>
         </div>
       </div>
     </div>

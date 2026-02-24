@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Briefcase, Search, Plus, Eye, Edit, Calendar, X } from 'lucide-react';
+import { Briefcase, Search, Plus, Edit, Calendar, X, MessageCircle, Send } from 'lucide-react';
 import api from '../../api/api';
 
 const Cases = () => {
@@ -8,10 +8,21 @@ const Cases = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [showMessagesModal, setShowMessagesModal] = useState(false);
   const [selectedCase, setSelectedCase] = useState(null);
   const [isEdit, setIsEdit] = useState(false);
   const [clients, setClients] = useState([]);
   const [loadingClients, setLoadingClients] = useState(false);
+
+  // Message states
+  const [messages, setMessages] = useState([]);
+  const [messageContent, setMessageContent] = useState('');
+  const [selectedReceiver, setSelectedReceiver] = useState('');
+  const [caseParticipants, setCaseParticipants] = useState([]);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+  const [sendingMessage, setSendingMessage] = useState(false);
+
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
 
   const [formData, setFormData] = useState({
     title: '',
@@ -51,7 +62,6 @@ const Cases = () => {
     try {
       setLoadingClients(true);
       const { data } = await api.get('/advocate/clients');
-      console.log('Clients fetched:', data); // Debug log
       setClients(data);
     } catch (err) {
       console.error('Error fetching clients:', err);
@@ -66,12 +76,11 @@ const Cases = () => {
     try {
       if (isEdit) {
         const updatedData = {};
-
-      Object.keys(formData).forEach((key) => {
-        if (formData[key] !== selectedCase[key]) {
-          updatedData[key] = formData[key];
-        }
-      });
+        Object.keys(formData).forEach((key) => {
+          if (formData[key] !== selectedCase[key]) {
+            updatedData[key] = formData[key];
+          }
+        });
         await api.patch(`/advocate/cases/${selectedCase._id}`, updatedData);
       } else {
         await api.post('/advocate/cases', formData);
@@ -116,6 +125,114 @@ const Cases = () => {
     setShowModal(false);
     setSelectedCase(null);
     setIsEdit(false);
+  };
+
+  // Message Functions
+  const openMessagesModal = async (caseData) => {
+    setSelectedCase(caseData);
+    setShowMessagesModal(true);
+    await fetchCaseDetails(caseData._id);
+    await fetchMessages(caseData._id);
+  };
+
+  const closeMessagesModal = () => {
+    setShowMessagesModal(false);
+    setSelectedCase(null);
+    setMessages([]);
+    setMessageContent('');
+    setSelectedReceiver('');
+    setCaseParticipants([]);
+  };
+
+  const fetchCaseDetails = async (caseId) => {
+    try {
+      const { data } = await api.get(`/advocate/cases/${caseId}`);
+
+      // Build participants list
+      const participants = [];
+
+      // Add client
+      if (data.clientId) {
+        participants.push({
+          id: typeof data.clientId === 'object' ? data.clientId._id : data.clientId,
+          name: data.clientId?.name || 'Client',
+          role: 'client'
+        });
+      }
+
+      // Add assigned juniors
+      if (data.assignedJuniors && data.assignedJuniors.length > 0) {
+        data.assignedJuniors.forEach(junior => {
+
+          const juniorId =
+            typeof junior === "object" ? junior._id : junior;
+
+          const juniorName =
+            typeof junior === "object" ? junior.name : "Junior Advocate";
+
+          participants.push({
+            id: juniorId,
+            name: juniorName,
+            role: "junior_advocate"
+          });
+        });
+      }
+
+      setCaseParticipants(participants);
+
+      // Auto-select first participant
+      if (participants.length > 0) {
+        setSelectedReceiver(participants[0].id);
+      }
+    } catch (err) {
+      console.error('Error fetching case details:', err);
+    }
+  };
+
+  const fetchMessages = async (caseId) => {
+    try {
+      setLoadingMessages(true);
+      const { data } = await api.get(`/messages/${caseId}`);
+      setMessages(data);
+    } catch (err) {
+      console.error('Error fetching messages:', err);
+    } finally {
+      setLoadingMessages(false);
+    }
+  };
+
+  const sendMessage = async (e) => {
+    e.preventDefault();
+
+    if (!messageContent.trim() || !selectedReceiver) {
+      alert('Please select a receiver and enter a message');
+      return;
+    }
+
+    try {
+      setSendingMessage(true);
+      await api.post('/messages', {
+        caseId: selectedCase._id,
+        receiverId: String(selectedReceiver),
+        content: messageContent.trim()
+      });
+
+      setMessageContent('');
+      await fetchMessages(selectedCase._id);
+
+      // Scroll to bottom
+      setTimeout(() => {
+        const messagesContainer = document.getElementById('messages-container');
+        if (messagesContainer) {
+          messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+      }, 100);
+    } catch (err) {
+      console.error('Error sending message:', err);
+      alert('Failed to send message');
+    } finally {
+      setSendingMessage(false);
+    }
   };
 
   const StatusBadge = ({ status }) => {
@@ -218,6 +335,9 @@ const Cases = () => {
                       <td className="px-6 py-4">
                         <p className="font-semibold text-gray-900">{c.title}</p>
                         <p className="text-sm text-gray-500">{c.caseNumber}</p>
+                        <p className="text-sm text-gray-500">
+                          Client: {c.clientId?.userId?.name || "N/A"}
+                        </p>
                       </td>
                       <td className="px-6 py-4 text-gray-700">{c.court}</td>
                       <td className="px-6 py-4 text-center text-sm">
@@ -235,6 +355,13 @@ const Cases = () => {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex gap-2 justify-center">
+                          <button
+                            onClick={() => openMessagesModal(c)}
+                            className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition"
+                            title="Messages"
+                          >
+                            <MessageCircle size={18} />
+                          </button>
                           {c.status !== 'closed' && (
                             <button
                               onClick={() => openModal('edit', c)}
@@ -260,6 +387,10 @@ const Cases = () => {
                     <div>
                       <h3 className="font-bold text-gray-900">{c.title}</h3>
                       <p className="text-sm text-gray-500">{c.caseNumber}</p>
+                      <p className="text-sm text-gray-500">
+                        Client: {c.clientId?.userId?.name || "N/A"}
+
+                      </p>
                     </div>
                     <StatusBadge status={c.status} />
                   </div>
@@ -271,14 +402,23 @@ const Cases = () => {
                       </p>
                     )}
                   </div>
-                  {c.status !== 'closed' && (
+                  <div className="flex gap-2">
                     <button
-                      onClick={() => openModal('edit', c)}
-                      className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                      onClick={() => openMessagesModal(c)}
+                      className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center justify-center gap-2"
                     >
-                      Edit Case
+                      <MessageCircle size={16} />
+                      Messages
                     </button>
-                  )}
+                    {c.status !== 'closed' && (
+                      <button
+                        onClick={() => openModal('edit', c)}
+                        className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                      >
+                        Edit
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -297,24 +437,14 @@ const Cases = () => {
         )}
       </div>
 
-      {/* Modal with Blur Effect */}
+      {/* Edit/Create Case Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop with blur */}
-          <div
-            className="absolute inset-0 bg-black/30 backdrop-blur-sm"
-            onClick={closeModal}
-          ></div>
-
-          {/* Modal Content */}
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={closeModal}></div>
           <div className="relative bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b sticky top-0 bg-white z-10">
               <h2 className="text-xl font-bold text-gray-900">{isEdit ? 'Edit Case' : 'Create New Case'}</h2>
-              <button
-                onClick={closeModal}
-                className="p-2 hover:bg-gray-100 rounded-lg transition"
-                type="button"
-              >
+              <button onClick={closeModal} className="p-2 hover:bg-gray-100 rounded-lg transition" type="button">
                 <X size={24} />
               </button>
             </div>
@@ -345,45 +475,27 @@ const Cases = () => {
                   />
                 </div>
 
-                {/* Client Dropdown - FIXED VERSION */}
-{/* Client Dropdown - FIXED VERSION */}
-<div className="md:col-span-2">
-  <label className="block text-sm font-medium text-gray-700 mb-1">
-    Client *
-  </label>
-
-  <select
-    required
-    value={formData.clientId}
-    onChange={(e) =>
-      setFormData({ ...formData, clientId: e.target.value })
-    }
-    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-  >
-    <option value="">-- Select a Client --</option>
-
-    {clients.map((client) => (
-      <option
-        key={client._id}
-        value={
-          // ✅ THIS IS THE FIX
-          typeof client.userId === "object"
-            ? client.userId._id
-            : client.userId
-        }
-      >
-        {/* ✅ Safe display whether populated or not */}
-        {client.userId?.name || client.name} (
-        {client.userId?.email || client.email})
-      </option>
-    ))}
-  </select>
-
-  <p className="text-xs text-gray-500 mt-1">
-    {clients.length} client{clients.length !== 1 ? "s" : ""} available
-  </p>
-</div>
-
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Client *</label>
+                  <select
+                    required
+                    value={formData.clientId}
+                    onChange={(e) => setFormData({ ...formData, clientId: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  >
+                    <option value="">-- Select a Client --</option>
+                    {clients.map((client) => (
+                      <option
+                        key={client._id}
+                        value={client._id}                       >
+                        {client.userId?.name || client.name} ({client.userId?.email || client.email})
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {clients.length} client{clients.length !== 1 ? "s" : ""} available
+                  </p>
+                </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Court *</label>
@@ -447,6 +559,111 @@ const Cases = () => {
                 >
                   {isEdit ? 'Update Case' : 'Create Case'}
                 </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Messages Modal */}
+      {showMessagesModal && selectedCase && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={closeMessagesModal}></div>
+
+          <div className="relative bg-white rounded-xl shadow-2xl max-w-4xl w-full h-[80vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">{selectedCase.title}</h2>
+                <p className="text-sm text-gray-600">{selectedCase.caseNumber}</p>
+              </div>
+              <button onClick={closeMessagesModal} className="p-2 hover:bg-gray-100 rounded-lg transition">
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Messages Container */}
+            <div
+              id="messages-container"
+              className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50"
+            >
+              {loadingMessages ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                </div>
+              ) : messages.length > 0 ? (
+                messages.map((msg) => {
+                  const isSent = msg.sender._id === currentUser.id;
+                  return (
+                    <div key={msg._id} className={`flex ${isSent ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[70%] ${isSent ? 'bg-blue-600 text-white' : 'bg-white text-gray-900'} rounded-lg p-4 shadow`}>
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className={`text-xs font-semibold ${isSent ? 'text-blue-100' : 'text-gray-600'}`}>
+                            {isSent ? 'You' : msg.sender.name}
+                          </p>
+                          <span className={`text-xs ${isSent ? 'text-blue-200' : 'text-gray-500'}`}>
+                            ({msg.sender.role})
+                          </span>
+                        </div>
+                        <p className="wrap-break-words">{msg.content}</p>
+                        <p className={`text-xs mt-2 ${isSent ? 'text-blue-200' : 'text-gray-500'}`}>
+                          {new Date(msg.createdAt).toLocaleString('en-IN', {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                  <MessageCircle size={48} className="mb-3 opacity-50" />
+                  <p>No messages yet. Start the conversation!</p>
+                </div>
+              )}
+            </div>
+
+            {/* Message Input */}
+            <form onSubmit={sendMessage} className="p-6 border-t bg-white">
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Send to:</label>
+                  <select
+                    value={selectedReceiver}
+                    onChange={(e) => setSelectedReceiver(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="">-- Select Recipient --</option>
+                    {caseParticipants.map((participant) => (
+                      <option key={participant.id} value={participant.id}>
+                        {participant.name} ({participant.role})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={messageContent}
+                    onChange={(e) => setMessageContent(e.target.value)}
+                    placeholder="Type your message..."
+                    className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    disabled={sendingMessage}
+                  />
+                  <button
+                    type="submit"
+                    disabled={sendingMessage || !messageContent.trim() || !selectedReceiver}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    <Send size={18} />
+                    {sendingMessage ? 'Sending...' : 'Send'}
+                  </button>
+                </div>
               </div>
             </form>
           </div>

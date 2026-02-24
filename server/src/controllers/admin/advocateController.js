@@ -4,25 +4,36 @@ import logActivity from "../../utils/logActivity.js";
 
 
 //get all advocates
-export const  getAllAdvocates = async(req,res) => {
-  try{ 
-    const advocates = await Advocate.find().populate("userId", "name email role").sort({ createdAt: -1});
-     
-    res.status(200).json({ success: true, count: advocates.length, data: advocates
-    });
-  } catch (error) { res.status(500).json({
-      success: false,
-      message: 'Failed to fetch advocates',
-      error: error.message
+export const getAllAdvocates = async (req, res) => {
+  try {
+    const advocates = await Advocate.find()
+      .populate("userId", "name email role")
+      .sort({ createdAt: -1 });
+
+    // Remove broken records
+    const validAdvocates = advocates.filter(a => a.userId !== null);
+
+    res.status(200).json({
+      success: true,
+      count: validAdvocates.length,
+      data: validAdvocates
     });
 
-  } 
-}
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch advocates",
+      error: error.message
+    });
+  }
+};
 
 //GET all pending advocates
 export const getPendingAdvocates = async (req, res) => {
   try {
     const advocates = await Advocate.find({ status: "pending" }).populate("userId", "name email");
+        const validAdvocates = advocates.filter(a => a.userId !== null);
+
     res.status(200).json(advocates);
   }
   catch (error) {
@@ -85,6 +96,8 @@ export const approveAdvocate = async (req, res) => {
 export const getApprovedAdvocate = async (req, res) => {
   try {
     const advocates = await Advocate.find({ status: "approved" }).populate("userId", "name email");
+        const validAdvocates = advocates.filter(a => a.userId !== null);
+
     res.status(200).json(advocates)
   } catch (error) {
     res.status(500).json({ mesaage: "error.message" });
@@ -100,6 +113,8 @@ export const getApprovedAdvocateById = async (req, res) => {
       _id: req.params.id,
       status: "approved",
     }).populate("userId", "name email");
+        const validAdvocates = advocates.filter(a => a.userId !== null);
+
 
     if (!advocate) {
       return res
@@ -168,6 +183,7 @@ export const getRejectedAdvocates = async (req, res) => {
   try {
     const advocates = await Advocate.find({ status: "rejected" })
       .populate("userId", "name email");
+    const validAdvocates = advocates.filter(a => a.userId !== null);
 
     res.status(200).json(advocates);
   } catch (error) {

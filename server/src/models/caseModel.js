@@ -18,7 +18,7 @@ const caseSchema = new mongoose.Schema(
       required: true
     },
 
-    juniors: [
+    assignedJuniors: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User"

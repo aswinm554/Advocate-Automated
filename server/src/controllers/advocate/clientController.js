@@ -40,11 +40,6 @@ export const getClientById = async (req, res) => {
 
     });
 
-    res.status(200).json({
-      client,
-      cases
-    });
-
     const payments = await Payment.find({
       advocateId: req.user.id,
       clientId: client._id

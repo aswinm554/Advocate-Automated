@@ -1,41 +1,7 @@
 import Payment from "../../models/paymentModel.js";
 import User from "../../models/userModel.js";
 import { generateInvoice } from "../../utils/generateInvoice.js";
-
-
-export const createPayment = async (req, res) => {
-  try {
-    const {
-      advocateId,
-      caseId,
-      appointmentId,
-      amount,
-      paymentType,
-      paymentMethod
-    } = req.body;
-
-    if (!advocateId || !amount || !paymentType || !paymentMethod) {
-      return res.status(400).json({ message: "Required fields missing" });
-    }
-
-    const payment = await Payment.create({
-      clientId: req.user.id,
-      advocateId,
-      caseId: caseId || null,
-      appointmentId: appointmentId || null,
-      amount,
-      paymentType,
-      paymentMethod,
-      status: "pending"
-    });
-
-    res.status(201).json(payment);
-
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
+import Razorpay from "razorpay"
 
 export const getClientPayments = async (req, res) => {
   try {
@@ -43,6 +9,7 @@ export const getClientPayments = async (req, res) => {
       clientId: req.user.id
     })
       .populate("advocateId", "name")
+      .populate("caseId", "title caseNumber")
       .sort({ createdAt: -1 });
 
     res.status(200).json(payments);
@@ -51,6 +18,8 @@ export const getClientPayments = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+
 export const payRequestedPayment = async (req, res) => {
   try {
     const { paymentMethod, transactionId } = req.body;
@@ -68,14 +37,12 @@ export const payRequestedPayment = async (req, res) => {
       return res.status(400).json({ message: "Payment already processed" });
     }
 
-    // Update payment
     payment.status = "paid";
     payment.paymentMethod = paymentMethod;
     payment.transactionId = transactionId;
 
     await payment.save();
 
-    // Generate invoice AFTER saving
     const client = await User.findById(payment.clientId);
     const advocate = await User.findById(payment.advocateId);
 
@@ -90,46 +57,6 @@ export const payRequestedPayment = async (req, res) => {
 
     res.status(200).json({
       message: "Payment successful",
-      payment
-    });
-
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-export const fakeRazorpayPayment = async (req, res) => {
-  try {
-    const payment = await Payment.findOne({
-      _id: req.params.id,
-      clientId: req.user.id
-    });
-
-    if (!payment) {
-      return res.status(404).json({ message: "Payment not found" });
-    }
-
-    payment.status = "paid";
-    payment.paymentMethod = "razorpay";
-    payment.transactionId = "FAKE_TXN_" + Date.now();
-
-    await payment.save();
-
-    // Generate invoice
-    const client = await User.findById(payment.clientId);
-    const advocate = await User.findById(payment.advocateId);
-
-    const invoicePath = generateInvoice(
-      payment,
-      client.name,
-      advocate.name
-    );
-
-    payment.invoicePath = invoicePath;
-    await payment.save();
-
-    res.status(200).json({
-      message: "Payment successful (Fake Razorpay)",
       payment
     });
 
