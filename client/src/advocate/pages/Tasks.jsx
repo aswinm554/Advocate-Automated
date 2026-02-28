@@ -9,7 +9,7 @@ const Tasks = () => {
   const [availableJuniors, setAvailableJuniors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     caseId: '',
     assignedTo: '',
@@ -18,10 +18,10 @@ const Tasks = () => {
     deadline: '',
     priority: 'medium'
   });
-  
 
 
-  
+
+
   useEffect(() => {
     fetchTasks();
     fetchCases();
@@ -70,13 +70,8 @@ const Tasks = () => {
 
   const filterJuniorsForCase = async (caseId) => {
     try {
-      const { data } = await api.get(`/advocate/cases/${caseId}`);
-      
-      if (data.juniors && data.juniors.length > 0) {
-        const assignedJuniors = allJuniors.filter(junior => 
-          data.juniors.includes(junior._id)
-        );
-        setAvailableJuniors(assignedJuniors);
+      if (caseId) {
+        setAvailableJuniors(allJuniors);
       } else {
         setAvailableJuniors([]);
       }
@@ -88,7 +83,7 @@ const Tasks = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     try {
       await api.post('/advocate/tasks', formData);
       setShowModal(false);
@@ -103,7 +98,7 @@ const Tasks = () => {
 
   const handleDelete = async (taskId) => {
     if (!window.confirm('Are you sure you want to delete this task?')) return;
-    
+
     try {
       await api.delete(`/advocate/tasks/${taskId}`);
       fetchTasks();
@@ -139,7 +134,7 @@ const Tasks = () => {
       completed: { bg: 'bg-green-100', text: 'text-green-700', icon: <CheckSquare size={14} /> }
     };
     const config = configs[status] || configs.pending;
-    
+
     return (
       <span className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full ${config.bg} ${config.text}`}>
         {config.icon}
@@ -156,7 +151,7 @@ const Tasks = () => {
       urgent: { bg: 'bg-red-100', text: 'text-red-700' }
     };
     const config = configs[priority] || configs.medium;
-    
+
     return (
       <span className={`px-2 py-1 text-xs font-semibold rounded ${config.bg} ${config.text}`}>
         {priority.toUpperCase()}
@@ -334,11 +329,11 @@ const Tasks = () => {
         )}
       </div>
 
-      {/* Create Task Modal */}
+
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => { setShowModal(false); resetForm(); }}></div>
-          
+
           <div className="relative bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b sticky top-0 bg-white z-10">
               <h2 className="text-xl font-bold">Create New Task</h2>
@@ -376,9 +371,9 @@ const Tasks = () => {
                     disabled={!formData.caseId}
                   >
                     <option value="">
-                      {!formData.caseId 
-                        ? '-- Select Case First --' 
-                        : availableJuniors.length === 0 
+                      {!formData.caseId
+                        ? '-- Select Case First --'
+                        : availableJuniors.length === 0
                           ? '-- No Junior Assigned to Case --'
                           : '-- Select Junior Advocate --'}
                     </option>

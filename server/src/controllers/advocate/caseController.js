@@ -74,16 +74,15 @@ export const getAllCase = async (req, res) => {
 
 export const getCaseById = async (req, res) => {
   try {
-    const caseData = await Case.findOne({
-      _id: req.params.id,
-      advocateId: req.user.id
-    });
-
-    if (!caseData) {
-      return res.status(404).json({
-        message: "Case not found or access denied"
+    const caseData = await Case.findById(req.params.id)
+      .populate("assignedJuniors", "name email role")
+      .populate({
+        path: "clientId",
+        populate: {
+          path: "userId",
+          select: "name email role"
+        }
       });
-    }
 
     res.status(200).json(caseData);
 

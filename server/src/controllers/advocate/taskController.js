@@ -18,7 +18,7 @@ export const createTask = async (req, res) => {
       return res.status(400).json({ message: "Deadline must be future date" });
     }
 
-    
+
     const caseExists = await Case.findOne({
       _id: caseId,
       advocateId: req.user._id
@@ -38,21 +38,28 @@ export const createTask = async (req, res) => {
       return res.status(404).json({ message: "Invalid junior advocate" });
     }
 
-    if (!caseExists.juniors.includes(assignedTo)) {
-      return res.status(400).json({
-        message: "Junior not assigned to this case"
-      });
+    if (!caseExists.assignedJuniors) {
+      caseExists.assignedJuniors = [];
+    }
+
+    const alreadyAssigned = caseExists.assignedJuniors.some(
+      (juniorId) => juniorId.toString() === assignedTo
+    );
+
+    if (!alreadyAssigned) {
+      caseExists.assignedJuniors.push(assignedTo);
+      await caseExists.save();
     }
 
     const task = await Task.create({
-      advocateId: req.user._id,
       caseId,
       assignedTo,
+      assignedBy: req.user._id,
+      advocateId: req.user._id, 
       title,
       description,
       deadline,
-      priority: priority || "medium",
-      status: "pending"
+      priority
     });
 
     res.status(201).json({
@@ -80,7 +87,7 @@ export const getAdvocateTasks = async (req, res) => {
       .populate("caseId", "title caseNumber")
       .populate("assignedTo", "name email")
       .sort({ createdAt: -1 });
-      
+
 
     res.status(200).json(tasks);
 
