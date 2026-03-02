@@ -38,6 +38,7 @@ const Advocate = () => {
           specialization: advocate.specialization || "N/A",
           experience: advocate.experience || 0,
           status: advocate.status || "unknown",
+          rejectionReason: advocate.rejectionReason || null,
           licenseDocument: advocate.licenseDocument,
           createdAt: advocate.createdAt,
           updatedAt: advocate.updatedAt
